@@ -56,7 +56,7 @@ _Sources:_
 - Define PORT
   > PORT=5000
 - Also do not forget to define MongoDB url:
-  > DATABASE_URL=mongodb+srv://chili123:chili123@loftdb.ls9iinx.mongodb.net/loftdb?retryWrites=true&w=majority
+  > DATABASE_URL=mongodb+srv://<username>:<password>@...
 - Add secret key, needed in moments of creation a jwt tokens. Before that in console type next lines of code:
 
 ```
