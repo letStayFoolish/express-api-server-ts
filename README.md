@@ -5,7 +5,8 @@ _Sources:_
 
 ## 1. Initialize Project
 
-- Before any actions, first things first, if you are going to use code that is already written
+### 1.1 Before any actions, first things first, if you are going to use code that is already written
+
 - Create your database using MongoDB. Get connection url which will later be used in `.env` file as `DATABASE_URL`
 - In this file as a server path use: `http://localhost:5000` --> `PORT` is 5000 by default, if you want to change it, go to the `.env` file and set constant for PORT as you wish
 - Also, do not forget to generate new secret key and put it in `.env` file as `JWT_SECRET`
