@@ -320,6 +320,80 @@ const registerUser = async (req, res, next) => {
 - JSON Web Token help shield a route from an unauthenticated user.
 - JWT creates a token, sends it to the client, and then the client uses the token for making requests. It also helps to verify that you are a valid user making those requests.
 
+```
+import { Request, Response, NextFunction } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import User from "../models/User";
+import asyncHandler from "express-async-handler";
+import { AuthenticationError } from "./errorMiddleware";
+
+const authenticate = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      let token = req.cookies.jwt;
+
+      if (!token) {
+        throw new AuthenticationError("Token not found");
+      }
+
+      const jwtSecret = process.env.JWT_SECRET || "";
+      const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+
+      if (!decoded || !decoded.userId) {
+        throw new AuthenticationError("UserId not found");
+      }
+
+      const user = await User.findById(decoded.userId, "_id name email");
+
+      if (!user) {
+        throw new AuthenticationError("User not found");
+      }
+
+      req.user = user;
+      next();
+    } catch (e) {
+      throw new AuthenticationError("Invalid token");
+    }
+  }
+);
+
+export { authenticate };
+```
+- Let’s create a errorMiddleware.ts file and include below code:
+```
+import { NextFunction, Request, Response } from "express";
+
+const errorHandler = (
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  console.error(err.stack);
+
+  if (err instanceof AuthenticationError) {
+    res.status(401).json({ message: "Unauthorized: " + err.message });
+  } else {
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+class AuthenticationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AuthenticationError";
+  }
+}
+
+export { errorHandler, AuthenticationError };
+```
+- In root file add it and invoke like:
+```
+import { errorHandler } from "./middleware/errorMiddleware";
+
+app.use(errorHandler);
+```
+
 ### 9.1 Protet the routes
 
 - To prevent unauthenticated users from accessing the private route, take the token from the cookie, verify the token, and redirect users based on role
@@ -396,6 +470,65 @@ protect = (req, res, next) => {
   > router.route('/').get(adminAuth, getAllUsersController)
 - And so on for all of the routes that need to be protected
 
+### 9.2 Install helmet package also and add it to the index.ts file. This secures the app by adding a set of response headers.
+> npm i helmet
+- The index.ts up to now should be as below (* this should match your code only in case that you did everything like in the [source](https://blog.stackademic.com/create-a-backend-application-using-express-typescript-and-handle-authentication-1f67be81da60)):
+```
+import express from "express";
+import authRouter from "./routes/authRouter";
+import connectUserDB from "./connections/userDB";
+import dotenv from "dotenv";
+import cors from "cors";
+import helmet from "helmet";
+import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
+import userRouter from "./routes/userRouter";
+import { authenticate } from "./middleware/authMiddleware";
+import { errorHandler } from "./middleware/errorMiddleware";
+
+dotenv.config();
+
+interface UserBasicInfo {
+  _id: string;
+  name: string;
+  email: string;
+}
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: UserBasicInfo | null;
+    }
+  }
+}
+
+const app = express();
+const port = process.env.PORT || 8000;
+app.use(helmet());
+
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
+
+app.use(cookieParser());
+
+app.use(bodyParser.json()); // To recognize the req obj as a json obj
+app.use(bodyParser.urlencoded({ extended: true })); // To recognize the req obj as strings or arrays. extended true to handle nested objects also
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+
+app.use(authRouter);
+app.use("/users", authenticate, userRouter);
+
+app.use(errorHandler);
+
+connectUserDB(); // if you have making DB connection inside a different file;
+```
 ## 10. Logout
 
 - set cookie to "" like so:
