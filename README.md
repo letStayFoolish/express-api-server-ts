@@ -21,7 +21,7 @@ _Sources:_
 
 - Install devDependencies:
 
-  > npm install -D typescript nodemon @types/express @types/cors @types/jsonwebtoken
+  > npm install typescript @types/node @types/express ts-node nodemon @types/cors @types/jsonwebtoken --save-dev
 
 - Add a `tsconfig.json` file for **typescript** configuration:
 
