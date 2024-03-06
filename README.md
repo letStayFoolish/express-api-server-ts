@@ -2,6 +2,7 @@
 
 _Sources:_
 [https://dev.to/cristain/how-to-implement-jwt-authentication-using-node-express-typescript-app-2023-2c5o](https://dev.to/cristain/how-to-implement-jwt-authentication-using-node-express-typescript-app-2023-2c5o)
+[https://blog.stackademic.com/create-a-backend-application-using-express-typescript-and-handle-authentication-1f67be81da60](https://blog.stackademic.com/create-a-backend-application-using-express-typescript-and-handle-authentication-1f67be81da60)
 
 ## 1. Initialize Project
 
@@ -18,6 +19,8 @@ _Sources:_
 - Install dependencies:
 
   > npm install express mongoose cors jsonwebtoken dotenv
+- and:
+  > npm i cookie-parser
 
 - Install devDependencies:
 
@@ -27,6 +30,8 @@ _Sources:_
   > npm i bcryptjs jsonwebtoken
 - & 
   > npm i -D @types/bcryptjs @types/jsonwebtoken
+- &
+  > npm i -D @types/cookie-parser
 
 - Run below command to create a tsconfig.json file. Or add a `tsconfig.json` file for **typescript** configuration:
   >npx tsc --init
@@ -164,6 +169,17 @@ const server = app.listen(port, async () =>{
 - `userSchema.ts` contains **username** (or email), **password**, and **roles** (or isAdmin)
 
 ```
+import mongoose, { Document, Schema } from "mongoose";
+import bcrypt from "bcryptjs";
+
+export interface IUser extends Document {
+  name: string;
+  email: string;
+  password: string;
+  comparePassword: (enteredPassword: string) => boolean;
+  ...reset...
+};
+
 const userSchema = new Mongoose.Schema({
     name: {type, required, minlength, maxlength}
     email: {type, required, unique, validate, match},
@@ -173,7 +189,22 @@ const userSchema = new Mongoose.Schema({
     isAdmin: {type, required, default: false}
     or
     role: {type, default: "basic", required}
-}, timestamps: true)
+}, {
+timestamps: true}
+);
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
+    next();
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+userSchema.methods.comparePassword = async function (enteredPassword: string) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
 
 export const User = mongoose.model("User", userSchema)
 ```
@@ -187,15 +218,33 @@ export const User = mongoose.model("User", userSchema)
 - You can create a global helper function `generateToken.ts` in utils:
 
 ```
-export const generateToken = (props) => {
-                             payload
-    const token = jwt.create(userInfo, secret, {options})
+import jwt from "jsonwebtoken";
+import { Response } from "express";
 
-    res.cookie(cookieName, token, {
-        options...
-    })
-}
+const generateToken = (res: Response, userId: string) => {
+  const jwtSecret = process.env.JWT_SECRET || "";
+  const token = jwt.sign({ userId }, jwtSecret, {
+    expiresIn: "1h",
+  });
+
+  res.cookie("jwt", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV !== "development",
+    sameSite: "strict",
+    maxAge: 60 * 60 * 1000,
+  });
+};
+
+const clearToken = (res: Response) => {
+  res.cookie("jwt", "", {
+    httpOnly: true,
+    expires: new Date(0),
+  });
+};
+
+export { generateToken, clearToken };
 ```
+We include the userId in the token and set the expiration to 1 hour. Then we set a cookie as jwt with the generated token value. This will set the cookie in the client and for all the subsequent requests, the cookie will be sent automatically in the header.
 
 ## 7. Create User Api to Register
 
@@ -217,7 +266,7 @@ const registerUser = async (req, res, next) => {
         if(userExist) {
             res.status(400).json({
                 status: 400,
-                message: "..."
+                message: "The user already exists",
             })
             return;
             // or:
