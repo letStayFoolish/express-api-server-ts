@@ -23,6 +23,10 @@ _Sources:_
 
   > npm install typescript @types/node @types/express ts-node nodemon @types/cors @types/jsonwebtoken --save-dev
 
+- Let’s install jsonwebtoken library to work with JWT tokens, and bcryptjs to hash the password:
+  > npm i bcryptjs jsonwebtoken
+  > npm i -D @types/bcryptjs @types/jsonwebtoken
+
 - Run below command to create a tsconfig.json file. Or add a `tsconfig.json` file for **typescript** configuration:
   >npx tsc --init
 or
