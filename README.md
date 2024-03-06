@@ -25,11 +25,12 @@ _Sources:_
 
 - Let’s install jsonwebtoken library to work with JWT tokens, and bcryptjs to hash the password:
   > npm i bcryptjs jsonwebtoken
+- & 
   > npm i -D @types/bcryptjs @types/jsonwebtoken
 
 - Run below command to create a tsconfig.json file. Or add a `tsconfig.json` file for **typescript** configuration:
   >npx tsc --init
-or
+- or
   > tsc --init
 
 - add this config in `tsconfig.json`:
