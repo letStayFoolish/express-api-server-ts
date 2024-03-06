@@ -23,8 +23,9 @@ _Sources:_
 
   > npm install typescript @types/node @types/express ts-node nodemon @types/cors @types/jsonwebtoken --save-dev
 
-- Add a `tsconfig.json` file for **typescript** configuration:
-
+- Run below command to create a tsconfig.json file. Or add a `tsconfig.json` file for **typescript** configuration:
+  >npx tsc --init
+or
   > tsc --init
 
 - add this config in `tsconfig.json`:
